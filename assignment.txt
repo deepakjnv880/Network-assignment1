@@ -1,0 +1,54 @@
+Networking Assignment 1
+
+In this assignment, our goal is to build a user-id based chat program. There are two components:
+chat client, and relay server. The chat client can send different types of messages to the relay server. Each message has 16byte header, that indicates the type of message (first 12 bytes) and the length of payload(last 4 bytes). The relay server reads the header of the message to infer the type of the message and takes appropriate action. The types of messages are as follows:
+
+1) addGrp:groupName  - e.g. addGroup:cse-fac  will create a group having name cse-fac
+2) addUsrToGrp:usrName,grpName  - e.g. addUsrGrp:sriramk,cse-fac  will add user sriramk to group cse-fac
+3) groupId:msg - e.g. cse-fac:hello will send hello to all the userIds that are part of cse-fac groupId
+4) userId:msg
+5) myId:userId - e.g. myId:sriramk this message is sent by the client to the relay server during bootstrap.
+
+Solution methodology:
+Define the following methods for the client:
+-- bootstrap(): connects to the relay server and sends its user-id
+
+-- getreq(): reads one line from the user (already defined)
+
+-- makeHeader (typeOfMsg, lenOfPayload): creates a 16 byte fixed size header: 12bytes for type of message and 4 bytes for the length of payload e.g. makeHeader("addGrp", 1000): addGrpxxxxx padding to make it 12bytes for the type of message and a 4bytes to represent length
+
+-- readAndSendData()
+    --> getRequestFromUser()
+    --> makeHeader
+    --> send the header to relay server
+    --> send the payload to relay server
+
+-- displayMessage(): receive messages from relay server and display on the console    
+
+Make 2 threads in the client, one for reading input from the user and sending it to server (readAndSendData()), and another one for displaying messages received from the server onto the console (displayMessage()).
+
+Thread1:
+
+while (user has not exited) {
+	readAndSendData()
+}
+
+Thread2:
+while (user has not exited) {
+	displayMessages()
+}
+
+
+The Relay Server program should also be a concurrent program. It stores the userId and its corresponding socket info. It also maintains information about groups: groupId, list of userIds.
+
+Each thread of the server program looks like the following:
+while (socket not closed)
+ -- len,typeOfMsg = readHeader()
+ -- msg = readMsg(len)
+ -- doAction(typeOfMsg, msg)
+
+The basic code snippet implementing echo server is provided.
+
+
+
+
