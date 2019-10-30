@@ -8,7 +8,7 @@
 #include <pthread.h>
 #define MAXREQ 40
 #define MAXQUEUE 10
-int portno = 5035;
+int portno = 5039;
 // never play with address
 struct user{
   char user_id[10];
@@ -163,9 +163,9 @@ struct user * find_sender(int sockfd){
   // my_userid="shaktimaan";
   struct user * temp=users;
   while (temp!=NULL) {
-    printf("i gote %s, ",temp->user_id);
-    if (sockfd==temp->socketfd) {
-      printf("i got %s\n",temp->user_id);
+    // printf("i gote %s, ",temp->user_id);
+    if (sockfd==(temp->socketfd)) {
+      // printf("i got %s\n",temp->user_id);
       return temp;
       // break;
     }
@@ -233,19 +233,33 @@ void *server(void* fd) {
     else{
         printf("chatting\n");
         struct user* user=find_user(typeOfMsg);
-        if (user==NULL)printf("user is null\n");
-        printf("user is NOT null\n");
+        // if (user==NULL)printf("user is null\n");
+        // printf("user is NOT null\n");
         if (user!=NULL) {
-          n = write(user->socketfd, massage, strlen(massage));
-          printf("%d i send the massage %s to %d\n",n,massage,user->socketfd);
+          struct user * sender=find_sender(consockfd);
+          char all[30];
+          strcat(all,"From ");
+          strcat(all,sender->user_id);
+          strcat(all," (User) : ");
+          strcat(all,massage);
+          all[15+strlen(massage)+strlen(sender->user_id)]='\0';
+          n = write(user->socketfd, all, strlen(all));
+          printf("%d I send the massage %s to %d\n",n,all,user->socketfd);
         }
         else{
           struct group* group_users =find_group(typeOfMsg);
           if (group_users!=NULL) {
-            printf("sending massage to group %s\n",group_users->group_id);
+            char massage_all[30];
+            massage_all[0]='\0';
+            strcat(massage_all,"From ");
+            strcat(massage_all,typeOfMsg);
+            strcat(massage_all," (Group) : ");
+            strcat(massage_all,massage);
+            massage_all[16+strlen(massage)+strlen(typeOfMsg)]='\0';
             for (int i = 0; i < group_users->number_of_user_in_group; i++) {
-              write(group_users->socketfd[i], massage, strlen(massage));
+              write(group_users->socketfd[i], massage_all, strlen(massage_all));
             }
+            printf("I send %s to group %s\n",massage_all,group_users->group_id);
           }
           else printf("NO group or group is there with this name\n");
         }
