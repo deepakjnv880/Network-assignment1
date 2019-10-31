@@ -8,7 +8,7 @@
 #include <pthread.h>
 #define MAXREQ 40
 #define MAXQUEUE 10
-int portno = 5039;
+int portno = 5035;
 // never play with address
 
 pthread_mutex_t add_user_lock;
@@ -244,10 +244,10 @@ void *server(void* fd) {
     else{
         printf("chatting\n");
         struct user* user=find_user(typeOfMsg);
+        struct user * sender=find_sender(consockfd);
         // if (user==NULL)printf("user is null\n");
         // printf("user is NOT null\n");
         if (user!=NULL) {
-          struct user * sender=find_sender(consockfd);
           char all[30];
           strcat(all,"From ");
           strcat(all,sender->user_id);
@@ -260,17 +260,19 @@ void *server(void* fd) {
         else{
           struct group* group_users =find_group(typeOfMsg);
           if (group_users!=NULL) {
-            char massage_all[30];
+            char massage_all[50];
             massage_all[0]='\0';
             strcat(massage_all,"From ");
             strcat(massage_all,typeOfMsg);
-            strcat(massage_all," (Group) : ");
+            strcat(massage_all,"(Group), ");
+            strcat(massage_all,sender->user_id);
+            strcat(massage_all,"(User) : ");
             strcat(massage_all,massage);
-            massage_all[16+strlen(massage)+strlen(typeOfMsg)]='\0';
+            massage_all[23+strlen(massage)+strlen(typeOfMsg)+strlen(sender->user_id)]='\0';
             for (int i = 0; i < group_users->number_of_user_in_group; i++) {
               write(group_users->socketfd[i], massage_all, strlen(massage_all));
             }
-            printf("I send %s to group %s\n",massage_all,group_users->group_id);
+            printf("%ld I send %s to group %s\n",strlen(massage_all),massage_all,group_users->group_id);
           }
           else printf("NO group or group is there with this name\n");
         }

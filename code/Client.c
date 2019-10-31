@@ -10,8 +10,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #define MAXIN 20
-#define MAXOUT 40
-int portno = 5039;
+#define MAXOUT 50
+int portno = 5035;
 
 // assumed length of header is 12 byte
 
