@@ -10,6 +10,11 @@
 #define MAXQUEUE 10
 int portno = 5039;
 // never play with address
+
+pthread_mutex_t add_user_lock;
+pthread_mutex_t add_user_to_group_lock;
+pthread_mutex_t add_group_lock;
+
 struct user{
   char user_id[10];
   int socketfd;
@@ -41,7 +46,8 @@ struct user * find_user(char * user_id){
   return NULL;
 }
 
-struct user * add_user(char user_id[],int socketfd){
+void add_user(char user_id[],int socketfd){
+  pthread_mutex_lock(&add_user_lock);
   int n=strlen(user_id);
   if (users==NULL) {
     users=malloc(sizeof(struct user *));
@@ -74,10 +80,12 @@ struct user * add_user(char user_id[],int socketfd){
     temp=temp->next;
   }
   printf("\n");
-  return users;
+  // return users;
+  pthread_mutex_unlock(&add_user_lock);
 }
 
-struct group * add_group(char group_id[]){
+void add_group(char group_id[]){
+  pthread_mutex_lock(&add_group_lock);
   printf("i am in add group\n");
   int n=strlen(group_id);
   if (groups==NULL) {
@@ -120,10 +128,12 @@ struct group * add_group(char group_id[]){
     temp=temp->next;
   }
   printf("\n");
-  return groups;
+  // return groups;
+  pthread_mutex_unlock(&add_group_lock);
 }
 
 void add_user_to_group(char massage[]){
+  pthread_mutex_lock(&add_user_to_group_lock);
   printf("i am in add user to group\n");
   char group_id[10],user_id[10];
   int count=0;
@@ -155,6 +165,7 @@ void add_user_to_group(char massage[]){
     temp->number_of_user_in_group=temp->number_of_user_in_group+1;
     printf("till now number of user in this group is %d\n",temp->number_of_user_in_group);
   }
+  pthread_mutex_unlock(&add_user_to_group_lock);
 }
 
 struct user * find_sender(int sockfd){
@@ -218,11 +229,11 @@ void *server(void* fd) {
 
     if (strcmp(typeOfMsg,"myId")==0) {
       printf("myId\n");
-      users=add_user(massage,consockfd);
+      add_user(massage,consockfd);
     }
     else if (strcmp(typeOfMsg,"addGrp")==0) {
       printf("addGrp\n");
-      groups=add_group(massage);
+      add_group(massage);
       // printf("massaage is %s\n",massage);
     }
     else if (strcmp(typeOfMsg,"+UsrToGp")==0) {
@@ -287,6 +298,9 @@ bind(lstnsockfd, (struct sockaddr *)&serv_addr,sizeof(serv_addr));
 printf("Bounded to port\n");
 pthread_t thread_id[20];
 int count=0;
+if (pthread_mutex_init(&add_user_lock, NULL) != 0)printf("\n MUTEX init has FAILED\n");
+if (pthread_mutex_init(&add_user_to_group_lock, NULL) != 0)printf("\n MUTEX init has FAILED\n");
+if (pthread_mutex_init(&add_group_lock, NULL) != 0)printf("\n MUTEX init has FAILED\n");
 while (1) {
    printf("Listening for incoming connections\n");
 /* Listen for incoming connections */
@@ -299,4 +313,10 @@ while (1) {
    count++;
   }
 close(lstnsockfd);
+while (count--) {
+  pthread_join(thread_id[count], NULL);
+}
+pthread_mutex_destroy(&add_user_lock);
+pthread_mutex_destroy(&add_user_to_group_lock);
+pthread_mutex_destroy(&add_group_lock);
 }
